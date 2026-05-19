@@ -2,7 +2,13 @@
 
 a local flashcard app for turning class material into stuff you can actually study.
 
-the vibe is simple: keep your private class files on your own machine, ask Codex to help make the deck, then study it in the browser with flashcards, analytics, and a little chat helper on the side.
+## why i made this
+
+i made this while taking biology at college because building giant Quizlet decks started feeling like a whole second homework assignment. Quizlet does have import, but according to its own help docs, you still have to prepare terms and definitions in a clean format, separate them with commas, tabs, or dashes, separate each row, paste the text into the browser import field, then create the set. that is fine for a neat vocab list. it gets annoying when your real material is slides, transcripts, labs, notes, and study-guide chaos.
+
+i wanted something more local and less fussy: drop class material into a folder, use the Codex subscription i already have for coding, and let an agent help turn everything into flashcards and quizzes. the app runs in my browser against local files, keeps private class data out of the public repo, and could also work with locally run LLMs later.
+
+the other thing i wanted was better review. when a card comes back, cram.fyi can reword the prompt instead of showing the exact same sentence every time, so you have to understand the idea instead of memorizing the phrasing. very necessary. very bio-exam-survival.
 
 ## what's in here
 
