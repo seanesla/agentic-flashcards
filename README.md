@@ -38,6 +38,10 @@ agentic-flashcards/
     biology/
       study-guide.md
       flashcards.json
+      lecture_slides/
+      lecture_transcripts/
+      labs/
+      quizzes/
 ```
 
 Then run:
@@ -54,10 +58,18 @@ You can also keep class material outside the repo:
 npm start -- --data "/path/to/private/class-folder"
 ```
 
-Each class folder needs:
+Each class folder should have:
 
 - `study-guide.md` - the active study guide
 - `flashcards.json` - an array of cards with `topic`, `front`, and `back`
+
+It can also include the private context Codex needs to help you make better cards and quizzes:
+
+- `lecture_slides/`
+- `lecture_transcripts/`
+- `labs/`
+- `notes/`
+- `quizzes/`
 
 Example `flashcards.json`:
 
@@ -71,9 +83,18 @@ Example `flashcards.json`:
 ]
 ```
 
+## Typical workflow
+
+1. Add private class materials to `classes/<course-name>/`.
+2. Ask Codex to create or update `flashcards.json` from that private context.
+3. Run `npm start -- --class <course-name>`.
+4. Study cards in the browser and watch weak areas in analytics.
+5. Ask Codex to generate self-quizzes into `classes/<course-name>/quizzes/`.
+
 ## Important privacy note
 
 - This repo is meant to show the app shell and the agentic chat features.
 - Do not put private class material in `app/` or `examples/`.
 - If you keep class material inside this repo, put it under `classes/<course-name>/`.
+- Keep generated quizzes and study outputs inside `classes/<course-name>/`, too.
 - Before pushing changes, run `git status` and make sure no private course files are staged.

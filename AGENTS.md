@@ -29,6 +29,14 @@ If a user wants the simplest setup, they can keep real course files in `classes/
 - `study-guide.md`
 - `flashcards.json`
 
+It may also contain private course context used to create flashcards and quizzes:
+
+- `lecture_slides/`
+- `lecture_transcripts/`
+- `labs/`
+- `notes/`
+- `quizzes/`
+
 Users can also keep class files outside the repo and start the app with `npm start -- --data "/path/to/private/class"`.
 
 ## Data format
@@ -47,9 +55,14 @@ Users can also keep class files outside the repo and start the app with `npm sta
 
 `study-guide.md` is normal Markdown. Use headings or short section-title lines followed by study-guide items.
 
+`quizzes/` is for generated local self-quizzes. Keep quiz files inside the selected class folder so they stay private.
+
 ## Agent behavior
 
 - Keep the app usable without private data by preserving demo mode.
 - Treat selected class data as read-only context.
+- When creating flashcards, use the selected class folder as context and write/update `flashcards.json` only when the user asks.
+- When creating quizzes, write them into `classes/<course-name>/quizzes/` unless the user gives a different local private path.
+- Treat `study-guide.md` as the source of truth for testable material when it exists. Use slides, transcripts, notes, labs, and prior quizzes as supporting context.
 - Do not edit, copy, summarize, or publish private class files unless the user explicitly asks for local-only study work.
 - Before committing or pushing, scan for accidental class content and private paths.
