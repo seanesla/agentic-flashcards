@@ -45,6 +45,7 @@ export function parseJudgedRewordVariants(text, candidateFronts, originalFront) 
         if (!judgment || typeof judgment !== "object" || Array.isArray(judgment)) continue;
         if (judgment.fixedBackStillAnswers !== true) continue;
         if (judgment.answerTargetChanged !== false) continue;
+        if (judgment.fullCreditWithFixedBack !== true) continue;
 
         const key = normalizedText(judgment.front);
         const front = allowedCandidates.get(key);

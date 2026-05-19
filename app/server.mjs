@@ -512,11 +512,15 @@ function buildRewordJudgeInstructions() {
   return [
     "You are a strict flashcard safety judge for cram.fyi.",
     "Your job is to decide whether each candidate front is correctly answered by the unchanged fixed back answer.",
+    "Grade as if a beginner typed the fixed back verbatim as their answer to the candidate front.",
+    "Accept only if that exact fixed back would receive full credit and sound complete as written.",
     "Reject any candidate that changes the answer target, even if it is about the same topic.",
+    "Reject any candidate that is merely related to the same topic but expects a broader, narrower, causal, example-based, comparison, significance, or explanation-shaped answer.",
+    "Reject if the fixed back sounds like a fragment, category label, or definition when the candidate asks for a causal explanation, example, comparison, significance, or why/how reasoning.",
     "If a candidate asks for a term/name/process but the fixed back is a definition or explanation, reject it.",
     "If a candidate asks for a definition/explanation but the fixed back is only a term/name, reject it.",
     "When unsure, reject.",
-    "Return only valid JSON shaped like {\"judgments\":[{\"front\":\"...\",\"fixedBackStillAnswers\":true,\"answerTargetChanged\":false,\"reason\":\"...\"}]}."
+    "Return only valid JSON shaped like {\"judgments\":[{\"front\":\"...\",\"fixedBackStillAnswers\":true,\"answerTargetChanged\":false,\"fullCreditWithFixedBack\":true,\"reason\":\"...\"}]}."
   ].join("\n");
 }
 
@@ -535,13 +539,16 @@ function buildRewordJudgePrompt(card, candidates) {
     "Important examples:",
     "- If the candidate asks \"What is the term for large-scale evolutionary change?\" but the fixed back is \"Large-scale evolutionary change produced by many accumulated microevolutionary changes...\", reject it. That question expects the term, not the definition sentence.",
     "- If the candidate asks \"How would you define macroevolution?\" and the fixed back is the definition of macroevolution, accept it.",
+    "- If the candidate asks \"How does the study of where species live help explain their evolutionary past?\" but the fixed back is \"Study of where organisms live and how those patterns reveal evolutionary history.\", reject it. The fixed back is a glossary-style definition, not a full answer to the how question.",
+    "- If the candidate asks \"What does biogeography study?\" and the fixed back is \"Study of where organisms live and how those patterns reveal evolutionary history.\", accept it.",
     "",
     "Rules:",
     "- fixedBackStillAnswers is true only if the fixed back directly answers the candidate front.",
     "- answerTargetChanged is true if the candidate asks for a different kind of answer than the original front.",
+    "- fullCreditWithFixedBack is true only if the fixed back would be fully correct, complete, and natural enough as a verbatim answer.",
     "- Do not invent new fronts. Copy each candidate front exactly into its judgment.",
     "- Return one judgment per candidate.",
-    "- Return only JSON: {\"judgments\":[{\"front\":\"candidate front\",\"fixedBackStillAnswers\":false,\"answerTargetChanged\":true,\"reason\":\"short reason\"}]}"
+    "- Return only JSON: {\"judgments\":[{\"front\":\"candidate front\",\"fixedBackStillAnswers\":false,\"answerTargetChanged\":true,\"fullCreditWithFixedBack\":false,\"reason\":\"short reason\"}]}"
   ].join("\n");
 }
 
