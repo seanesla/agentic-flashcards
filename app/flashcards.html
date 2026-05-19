@@ -526,7 +526,6 @@
   <div class="mode" aria-label="Card order">
     <button class="active" id="studyGuideOrder">guide order</button>
     <button id="shuffleOrder">shuffle</button>
-    <button id="waveMode">wave mode</button>
     <select id="waveSize" aria-label="Wave size">
       <option value="10">10 cards</option>
       <option value="20" selected>20 cards</option>
@@ -663,7 +662,6 @@ const undoBtn = document.getElementById("undo");
 const toggleKnowns = document.getElementById("toggleKnowns");
 const studyGuideOrder = document.getElementById("studyGuideOrder");
 const shuffleOrder = document.getElementById("shuffleOrder");
-const waveMode = document.getElementById("waveMode");
 const waveSize = document.getElementById("waveSize");
 const waveNote = document.getElementById("waveNote");
 const studyShell = document.querySelector(".study-shell");
@@ -792,7 +790,7 @@ function savePosition() {
 
 function loadOrderMode() {
   const saved = localStorage.getItem(ORDER_MODE_KEY);
-  return saved === "shuffle" || saved === "wave" ? saved : "study";
+  return saved === "shuffle" ? saved : "study";
 }
 
 function loadWaveSize() {
@@ -816,11 +814,11 @@ function rebuildDeck(preserveIndex = false) {
     .filter(cardData => selected.has(cardData._i))
     .filter(cardData => showKnowns || getMastery(cardData._i) !== "mastered");
 
-  if (orderMode === "study" || orderMode === "wave") {
+  if (orderMode === "study") {
     sourceDeck.sort((a, b) => a._i - b._i);
   }
 
-  if (orderMode === "wave") {
+  if (orderMode === "study") {
     if (waveStart >= sourceDeck.length) waveStart = Math.max(sourceDeck.length - waveSizeValue, 0);
     deck = sourceDeck.slice(waveStart, waveStart + waveSizeValue);
     saveWaveStart();
@@ -844,13 +842,12 @@ function render() {
   somewhatCount.textContent = selectedCards.filter(cardData => getMastery(cardData._i) === "somewhat familiar").length;
   familiarCount.textContent = selectedCards.filter(cardData => getMastery(cardData._i) === "familiar").length;
   masteredCount.textContent = selectedCards.filter(cardData => getMastery(cardData._i) === "mastered").length;
-  leftCount.textContent = orderMode === "wave" ? sourceDeck.length : deck.length;
+  leftCount.textContent = orderMode === "study" ? sourceDeck.length : deck.length;
   totalCount.textContent = selectedCards.length;
   toggleKnowns.textContent = showKnowns ? "hide mastered" : "show mastered";
   undoBtn.disabled = history.length === 0;
   studyGuideOrder.classList.toggle("active", orderMode === "study");
   shuffleOrder.classList.toggle("active", orderMode === "shuffle");
-  waveMode.classList.toggle("active", orderMode === "wave");
   waveNote.textContent = getWaveNote();
 
   if (deck.length === 0) {
@@ -866,8 +863,8 @@ function render() {
 
   const current = deck[index];
   const text = getCardText(current);
-  counter.textContent = orderMode === "wave"
-    ? `wave card ${index + 1} of ${deck.length}`
+  counter.textContent = orderMode === "study"
+    ? `card ${index + 1} of ${deck.length} in current wave`
     : `${index + 1} of ${deck.length}`;
   frontText.textContent = text.front;
   backText.textContent = text.back;
@@ -1023,7 +1020,7 @@ function nextCard() {
 }
 
 function advanceWaveIfComplete() {
-  if (orderMode !== "wave" || deck.length > 0 || sourceDeck.length === 0) return;
+  if (orderMode !== "study" || deck.length > 0 || sourceDeck.length === 0) return;
   waveStart += waveSizeValue;
   if (waveStart >= sourceDeck.length) waveStart = 0;
   index = 0;
@@ -1042,7 +1039,7 @@ function mark(value) {
   saveMastery();
   saveVariants();
 
-  if (orderMode === "wave" && value === "learning" && !showKnowns && next !== "mastered") {
+  if (orderMode === "study" && value === "learning" && !showKnowns && next !== "mastered") {
     const repeatDelay = getRepeatDelay(next, deck.length - index);
     deck.splice(index + repeatDelay, 0, current);
     render();
@@ -1084,21 +1081,12 @@ function shuffleDeck() {
   render();
 }
 
-function startWaveMode() {
-  orderMode = "wave";
-  localStorage.setItem(ORDER_MODE_KEY, orderMode);
-  waveStart = 0;
-  index = 0;
-  saveWaveStart();
-  rebuildDeck();
-}
-
 function getWaveNote() {
-  if (orderMode !== "wave") return "";
-  if (!sourceDeck.length) return "Wave mode is on. No active cards are left.";
+  if (orderMode !== "study") return "";
+  if (!sourceDeck.length) return "No active cards are left.";
   const start = waveStart + 1;
   const end = Math.min(waveStart + waveSizeValue, sourceDeck.length);
-  return `Wave mode: studying cards ${start}-${end} of ${sourceDeck.length}. Weaker cards repeat sooner.`;
+  return `Studying cards ${start}-${end} of ${sourceDeck.length}. Weaker cards repeat sooner.`;
 }
 
 function getMastery(cardIndex) {
@@ -1761,11 +1749,10 @@ chatForm.addEventListener("submit", event => {
   enqueueChatMessage(text);
 });
 shuffleOrder.addEventListener("click", shuffleDeck);
-waveMode.addEventListener("click", startWaveMode);
 waveSize.addEventListener("change", () => {
   waveSizeValue = Number(waveSize.value);
   localStorage.setItem(WAVE_SIZE_KEY, String(waveSizeValue));
-  if (orderMode === "wave") {
+  if (orderMode === "study") {
     waveStart = 0;
     index = 0;
     saveWaveStart();
@@ -1775,7 +1762,9 @@ waveSize.addEventListener("change", () => {
 studyGuideOrder.addEventListener("click", () => {
   orderMode = "study";
   localStorage.setItem(ORDER_MODE_KEY, orderMode);
+  waveStart = 0;
   index = 0;
+  saveWaveStart();
   rebuildDeck();
 });
 toggleKnowns.addEventListener("click", () => {
