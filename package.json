@@ -1,5 +1,5 @@
 {
-  "name": "agentic-flashcards",
+  "name": "cram.fyi",
   "private": false,
   "scripts": {
     "start": "node app/server.mjs",

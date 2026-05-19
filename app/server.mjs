@@ -130,7 +130,7 @@ function buildTutorPrompt(body) {
 
 function buildBaseInstructions() {
   return [
-    "You are the live study helper inside Agentic Flashcards.",
+    "You are the live study helper inside cram.fyi.",
     "",
     "Hard rules:",
     "- Be loyal to the active study guide included below.",
@@ -389,7 +389,7 @@ class CodexBridge {
       this.ready = null;
     });
     await this.request("initialize", {
-      clientInfo: { name: "agentic-flashcards", title: "Agentic Flashcards", version: "1.0.0" },
+      clientInfo: { name: "cram.fyi", title: "cram.fyi", version: "1.0.0" },
       capabilities: { experimentalApi: true, requestAttestation: false }
     });
   }
@@ -556,7 +556,7 @@ function listenWithFallback(targetServer, port) {
     throw error;
   });
   targetServer.listen(port, HOST, () => {
-    console.log(`Agentic Flashcards: http://${HOST}:${port}/flashcards.html`);
+    console.log(`cram.fyi: http://${HOST}:${port}/flashcards.html`);
     console.log(`Data source: ${DATA_LABEL}`);
     console.log("Live helper: Codex App Server bridge using your ChatGPT login.");
   });

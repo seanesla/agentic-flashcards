@@ -40,7 +40,7 @@ if you do not choose a class folder, the app uses the safe demo deck in `example
 the easiest setup is to make one folder per class inside `classes/`:
 
 ```text
-agentic-flashcards/
+cram.fyi/
   app/
   examples/
   classes/
