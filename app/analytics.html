@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Flashcards Analytics</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: #101418;
+    color: #eef3f7;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 24px 16px 36px;
+  }
+  main {
+    width: min(94vw, 1120px);
+    margin: 0 auto;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  h1 {
+    color: #9da8b3;
+    font-size: 1rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  a, button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    border: 1px solid #34404d;
+    border-radius: 8px;
+    background: #222c36;
+    color: #eef3f7;
+    padding: 8px 12px;
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  a:hover, button:hover { border-color: #64b5f6; background: #2d3945; }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .stat, .chart-panel, .table-panel {
+    border: 1px solid #34404d;
+    border-radius: 8px;
+    background: #182028;
+  }
+  .stat {
+    min-height: 92px;
+    padding: 14px;
+  }
+  .stat-label {
+    color: #9da8b3;
+    font-size: 0.72rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  .stat-value {
+    margin-top: 10px;
+    font-size: 1.8rem;
+    font-weight: 760;
+    font-variant-numeric: tabular-nums;
+  }
+  .unfamiliar { color: #ff8377; }
+  .somewhat { color: #ffcf70; }
+  .familiar { color: #8bd3ff; }
+  .mastered { color: #63d471; }
+  .muted { color: #9da8b3; }
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .chart-panel {
+    min-height: 340px;
+    padding: 14px;
+  }
+  .chart-panel.wide {
+    grid-column: 1 / -1;
+    min-height: 360px;
+  }
+  canvas {
+    width: 100% !important;
+    height: 300px !important;
+  }
+  .wide canvas { height: 320px !important; }
+  .table-panel {
+    overflow: hidden;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+  }
+  th, td {
+    padding: 11px 12px;
+    border-bottom: 1px solid #34404d;
+    text-align: left;
+  }
+  th {
+    color: #9da8b3;
+    font-size: 0.72rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+  tr:last-child td { border-bottom: 0; }
+  .offline {
+    margin-bottom: 14px;
+    color: #ffcf70;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  @media (max-width: 760px) {
+    header { align-items: flex-start; flex-direction: column; }
+    .stats, .chart-grid { grid-template-columns: 1fr; }
+    .chart-panel.wide { grid-column: auto; }
+    .table-panel { overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Agentic Flashcards Analytics</h1>
+    <a href="flashcards.html">back to flashcards</a>
+  </header>
+
+  <div class="stats">
+    <section class="stat">
+      <div class="stat-label">Total</div>
+      <div class="stat-value" id="totalStat">0</div>
+    </section>
+    <section class="stat">
+      <div class="stat-label">Unfamiliar</div>
+      <div class="stat-value unfamiliar" id="unfamiliarStat">0</div>
+    </section>
+    <section class="stat">
+      <div class="stat-label">Somewhat Familiar</div>
+      <div class="stat-value somewhat" id="somewhatStat">0</div>
+    </section>
+    <section class="stat">
+      <div class="stat-label">Familiar</div>
+      <div class="stat-value familiar" id="familiarStat">0</div>
+    </section>
+    <section class="stat">
+      <div class="stat-label">Mastered</div>
+      <div class="stat-value mastered" id="masteredStat">0</div>
+    </section>
+  </div>
+
+  <div class="offline" id="offline"></div>
+
+  <div class="chart-grid">
+    <section class="chart-panel wide"><canvas id="sectionChart"></canvas></section>
+    <section class="chart-panel"><canvas id="weaknessChart"></canvas></section>
+    <section class="chart-panel"><canvas id="overallChart"></canvas></section>
+  </div>
+
+  <section class="table-panel">
+    <table>
+      <thead>
+        <tr>
+          <th>Study Guide Area</th>
+          <th>Topic</th>
+          <th>Unfamiliar</th>
+          <th>Somewhat Familiar</th>
+          <th>Familiar</th>
+          <th>Mastered</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody id="topicTable"></tbody>
+    </table>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const OLD_STATUS_KEY = "agenticFlashcards_status_v1";
+const MASTERY_KEY = "agenticFlashcards_mastery_v1";
+const SELECTED_KEY = "agenticFlashcards_selected_v1";
+const SIZE_KEY = "agenticFlashcards_size_v1";
+const MASTERY_LEVELS = ["unfamiliar", "somewhat familiar", "familiar", "mastered"];
+
+const topicBlocks = [
+  {topic: "Study Workflow", section: "Study Workflow", start: 0, count: 4},
+  {topic: "Cards and Content", section: "Cards and Content", start: 4, count: 4},
+  {topic: "Chat Assistant", section: "Chat Assistant", start: 8, count: 4},
+  {topic: "Progress Tracking", section: "Progress Tracking", start: 12, count: 4},
+  {topic: "Sharing and Deployment", section: "Sharing and Deployment", start: 16, count: 4}
+];
+
+const totalCards = topicBlocks.reduce((sum, block) => sum + block.count, 0);
+const selected = loadSelected();
+const mastery = loadMastery();
+const rows = buildTopicRows();
+const sectionRows = buildSectionRows(rows);
+const total = sumRows(rows);
+
+document.getElementById("totalStat").textContent = total.total;
+document.getElementById("unfamiliarStat").textContent = total.unfamiliar;
+document.getElementById("somewhatStat").textContent = total.somewhat;
+document.getElementById("familiarStat").textContent = total.familiar;
+document.getElementById("masteredStat").textContent = total.mastered;
+renderTable(rows);
+renderCharts();
+
+function loadSelected() {
+  const savedSize = Number(localStorage.getItem(SIZE_KEY));
+  if (savedSize !== totalCards) return new Set(Array.from({length: totalCards}, (_, i) => i));
+  try {
+    const raw = JSON.parse(localStorage.getItem(SELECTED_KEY) || "[]");
+    const valid = raw.filter(i => Number.isInteger(i) && i >= 0 && i < totalCards);
+    return new Set(valid.length ? valid : Array.from({length: totalCards}, (_, i) => i));
+  } catch {
+    return new Set(Array.from({length: totalCards}, (_, i) => i));
+  }
+}
+
+function loadMastery() {
+  const migrated = migrateOldStatus();
+  try {
+    const raw = localStorage.getItem(MASTERY_KEY);
+    if (!raw) return migrated;
+    const obj = JSON.parse(raw);
+    const map = new Map();
+    Object.entries(obj).forEach(([key, value]) => {
+      const i = Number(key);
+      if (Number.isInteger(i) && i >= 0 && i < totalCards && MASTERY_LEVELS.includes(value)) {
+        map.set(i, value);
+      }
+    });
+    return map.size ? map : migrated;
+  } catch {
+    return migrated;
+  }
+}
+
+function migrateOldStatus() {
+  const map = new Map();
+  try {
+    const raw = localStorage.getItem(OLD_STATUS_KEY);
+    if (!raw) return map;
+    const obj = JSON.parse(raw);
+    Object.entries(obj).forEach(([key, value]) => {
+      const i = Number(key);
+      if (!Number.isInteger(i) || i < 0 || i >= totalCards) return;
+      if (value === "known") map.set(i, "familiar");
+      if (value === "learning") map.set(i, "unfamiliar");
+    });
+  } catch {
+    return map;
+  }
+  return map;
+}
+
+function getMastery(cardIndex) {
+  return mastery.get(cardIndex) || "unfamiliar";
+}
+
+function buildTopicRows() {
+  return topicBlocks.map(block => {
+    const row = {section: block.section, topic: block.topic, unfamiliar: 0, somewhat: 0, familiar: 0, mastered: 0, total: 0};
+    for (let i = block.start; i < block.start + block.count; i += 1) {
+      if (!selected.has(i)) continue;
+      row.total += 1;
+      const cardStatus = getMastery(i);
+      if (cardStatus === "mastered") row.mastered += 1;
+      else if (cardStatus === "familiar") row.familiar += 1;
+      else if (cardStatus === "somewhat familiar") row.somewhat += 1;
+      else row.unfamiliar += 1;
+    }
+    return row;
+  }).filter(row => row.total > 0);
+}
+
+function buildSectionRows(topicRows) {
+  const map = new Map();
+  topicRows.forEach(row => {
+    if (!map.has(row.section)) map.set(row.section, {label: row.section, unfamiliar: 0, somewhat: 0, familiar: 0, mastered: 0, total: 0});
+    const section = map.get(row.section);
+    section.unfamiliar += row.unfamiliar;
+    section.somewhat += row.somewhat;
+    section.familiar += row.familiar;
+    section.mastered += row.mastered;
+    section.total += row.total;
+  });
+  return [...map.values()];
+}
+
+function sumRows(topicRows) {
+  return topicRows.reduce((sum, row) => ({
+    unfamiliar: sum.unfamiliar + row.unfamiliar,
+    somewhat: sum.somewhat + row.somewhat,
+    familiar: sum.familiar + row.familiar,
+    mastered: sum.mastered + row.mastered,
+    total: sum.total + row.total
+  }), {unfamiliar: 0, somewhat: 0, familiar: 0, mastered: 0, total: 0});
+}
+
+function renderTable(topicRows) {
+  document.getElementById("topicTable").innerHTML = topicRows.map(row => `
+    <tr>
+      <td>${row.section}</td>
+      <td>${row.topic}</td>
+      <td class="unfamiliar">${row.unfamiliar}</td>
+      <td class="somewhat">${row.somewhat}</td>
+      <td class="familiar">${row.familiar}</td>
+      <td class="mastered">${row.mastered}</td>
+      <td>${row.total}</td>
+    </tr>
+  `).join("");
+}
+
+function renderCharts() {
+  if (!window.Chart) {
+    document.getElementById("offline").textContent = "Chart.js did not load. The table still shows your progress.";
+    return;
+  }
+
+  const chartColor = "#d7dde4";
+  const gridColor = "rgba(157,168,179,0.12)";
+  const common = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    plugins: {
+      legend: {labels: {color: chartColor}},
+      tooltip: {callbacks: {afterLabel: context => {
+        const row = context.chart.data._rows && context.chart.data._rows[context.dataIndex];
+        return row ? `Total cards: ${row.total}` : "";
+      }}}
+    },
+    scales: {
+      x: {stacked: true, ticks: {color: "#9da8b3"}, grid: {color: gridColor}},
+      y: {stacked: true, beginAtZero: true, ticks: {color: "#9da8b3", precision: 0}, grid: {color: gridColor}}
+    }
+  };
+
+  const sectionData = {
+    labels: sectionRows.map(row => row.label),
+    datasets: [
+      {label: "Unfamiliar", data: sectionRows.map(row => row.unfamiliar), backgroundColor: "#ff8377"},
+      {label: "Somewhat familiar", data: sectionRows.map(row => row.somewhat), backgroundColor: "#ffcf70"},
+      {label: "Familiar", data: sectionRows.map(row => row.familiar), backgroundColor: "#8bd3ff"},
+      {label: "Mastered", data: sectionRows.map(row => row.mastered), backgroundColor: "#63d471"}
+    ],
+    _rows: sectionRows
+  };
+
+  const weakRows = [...rows]
+    .sort((a, b) => ((b.unfamiliar + b.somewhat) / b.total) - ((a.unfamiliar + a.somewhat) / a.total))
+    .slice(0, 10);
+
+  const weaknessData = {
+    labels: weakRows.map(row => row.topic),
+    datasets: [
+      {label: "Unfamiliar", data: weakRows.map(row => row.unfamiliar), backgroundColor: "#ff8377"},
+      {label: "Somewhat familiar", data: weakRows.map(row => row.somewhat), backgroundColor: "#ffcf70"},
+      {label: "Familiar", data: weakRows.map(row => row.familiar), backgroundColor: "#8bd3ff"},
+      {label: "Mastered", data: weakRows.map(row => row.mastered), backgroundColor: "#63d471"}
+    ],
+    _rows: weakRows
+  };
+
+  new Chart(document.getElementById("sectionChart"), {
+    type: "bar",
+    data: sectionData,
+    options: {...common, plugins: {...common.plugins, title: {display: true, text: "Study Guide Sections", color: "#eef3f7"}}}
+  });
+
+  new Chart(document.getElementById("weaknessChart"), {
+    type: "bar",
+    data: weaknessData,
+    options: {...common, indexAxis: "y", plugins: {...common.plugins, title: {display: true, text: "Weakest Topics First", color: "#eef3f7"}}}
+  });
+
+  new Chart(document.getElementById("overallChart"), {
+    type: "doughnut",
+    data: {
+      labels: ["Unfamiliar", "Somewhat familiar", "Familiar", "Mastered"],
+      datasets: [{data: [total.unfamiliar, total.somewhat, total.familiar, total.mastered], backgroundColor: ["#ff8377", "#ffcf70", "#8bd3ff", "#63d471"]}]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        legend: {position: "bottom", labels: {color: chartColor}},
+        title: {display: true, text: "Overall Progress", color: "#eef3f7"}
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>

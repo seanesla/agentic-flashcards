@@ -1,0 +1,11 @@
+{
+  "name": "agentic-flashcards",
+  "private": false,
+  "scripts": {
+    "start": "node server.mjs",
+    "check": "node --check server.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
